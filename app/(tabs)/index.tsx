@@ -52,29 +52,32 @@ export default function HomeScreen() {
                 pathname: "/products/[id]",
                 params: { id: item.id },
               }}
-              className="flex flex-row justify-between w-full my-2 overflow-hidden bg-white rounded-md"
-              style={styles.shadow}
             >
-              <Image
-                className="w-20 h-20"
-                width={80}
-                height={80}
-                source={{
-                  uri: "https://images.unsplash.com/photo-1608354580875-30bd4168b351?q=80&w=687&auto=format&fit=crop",
-                }}
-              />
-              <View className="flex-grow pt-2 pl-2">
-                <Text className="text-xl font-semibold">{item.title}</Text>
-              </View>
               <View
-                className={clsx(
-                  "w-20 pt-2 pl-2 justify-center items-center",
-                  item.isFollowStock ? "bg-teal-500" : "bg-slate-400"
-                )}
+                className="flex flex-row justify-between w-full my-2 overflow-hidden bg-white rounded-md"
+                style={styles.shadow}
               >
-                <Text className="text-xl font-semibold text-white">
-                  {item.stock}
-                </Text>
+                <Image
+                  className="w-20 h-20"
+                  width={80}
+                  height={80}
+                  source={{
+                    uri: "https://images.unsplash.com/photo-1608354580875-30bd4168b351?q=80&w=687&auto=format&fit=crop",
+                  }}
+                />
+                <View className="flex-grow pt-2 pl-2">
+                  <Text className="text-xl font-semibold">{item.title}</Text>
+                </View>
+                <View
+                  className={clsx(
+                    "w-20 pt-2 pl-2 justify-center items-center",
+                    item.isFollowStock ? "bg-teal-500" : "bg-slate-400"
+                  )}
+                >
+                  <Text className="text-xl font-semibold text-white">
+                    {item.stock}
+                  </Text>
+                </View>
               </View>
             </Link>
           )}
