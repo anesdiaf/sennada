@@ -1,75 +1,99 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { useDatabase } from "@/context/DatabaseContext";
+import { FlashList } from "@shopify/flash-list";
+import { clsx } from "clsx";
+import { Link } from "expo-router";
+import { RotateCcw, Search } from "lucide-react-native";
+import {} from "nativewind";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function HomeScreen() {
+  const { isDbReady, products, refreshData } = useDatabase();
+
+  if (!isDbReady) {
+    return (
+      <View className="flex-1">
+        <Text className="text-center">Loading database...</Text>
+      </View>
+    );
+  }
+
+  async function handleRefresh() {
+    await refreshData();
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <View className="flex-1 px-4 overflow-visible bg-zinc-50">
+      <View className="flex flex-row items-center justify-between pt-12 pb-3 bg-white">
+        <TouchableOpacity onPress={handleRefresh}>
+          <View className="flex flex-row items-center gap-3">
+            <Text className="text-xl font-bold">Liste des produits</Text>
+            <RotateCcw size={20} />
+          </View>
+        </TouchableOpacity>
+
+        <Link href={"/searchModal"}>
+          <Search size={20} />
+        </Link>
+      </View>
+
+      {products.length === 0 && (
+        <View className="items-center justify-center flex-1">
+          <Text className="text-center">La liste des produits est vide</Text>
+        </View>
+      )}
+
+      {products.length !== 0 && (
+        <FlashList
+          data={products}
+          estimatedItemSize={100}
+          renderItem={({ item }) => (
+            <Link
+              href={{
+                pathname: "/products/[id]",
+                params: { id: item.id },
+              }}
+              className="flex flex-row justify-between w-full my-2 overflow-hidden bg-white rounded-md"
+              style={styles.shadow}
+            >
+              <Image
+                className="w-20 h-20"
+                width={80}
+                height={80}
+                source={{
+                  uri: "https://images.unsplash.com/photo-1608354580875-30bd4168b351?q=80&w=687&auto=format&fit=crop",
+                }}
+              />
+              <View className="flex-grow pt-2 pl-2">
+                <Text className="text-xl font-semibold">{item.title}</Text>
+              </View>
+              <View
+                className={clsx(
+                  "w-20 pt-2 pl-2 justify-center items-center",
+                  item.isFollowStock ? "bg-teal-500" : "bg-slate-400"
+                )}
+              >
+                <Text className="text-xl font-semibold text-white">
+                  {item.stock}
+                </Text>
+              </View>
+            </Link>
+          )}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  shadow: {
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+
+    elevation: 2,
   },
 });
