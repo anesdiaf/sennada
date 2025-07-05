@@ -1,4 +1,5 @@
 import { useDatabase } from "@/context/DatabaseContext";
+import { base64ToDataUri } from "@/lib/utils";
 import { FlashList } from "@shopify/flash-list";
 import { clsx } from "clsx";
 import { Link } from "expo-router";
@@ -57,14 +58,25 @@ export default function HomeScreen() {
                 className="flex flex-row justify-between w-full my-2 overflow-hidden bg-white rounded-md"
                 style={styles.shadow}
               >
-                <Image
-                  className="w-20 h-20"
-                  width={80}
-                  height={80}
-                  source={{
-                    uri: "https://images.unsplash.com/photo-1608354580875-30bd4168b351?q=80&w=687&auto=format&fit=crop",
-                  }}
-                />
+                {item.base64Data ? (
+                  <Image
+                    className="w-20 h-20"
+                    width={80}
+                    height={80}
+                    source={{
+                      uri: base64ToDataUri(item.base64Data, item.mimeType!),
+                    }}
+                  />
+                ) : (
+                  <Image
+                    className="w-20 h-20"
+                    width={80}
+                    height={80}
+                    resizeMode="cover"
+                    source={require("@/assets/images/placeholder.png")}
+                  />
+                )}
+
                 <View className="flex-grow pt-2 pl-2">
                   <Text className="text-xl font-semibold">{item.title}</Text>
                 </View>
