@@ -1,9 +1,9 @@
 import { useDatabase } from "@/context/DatabaseContext";
-import { base64ToDataUri } from "@/lib/utils";
+import { base64ToDataUri, formatToDZD } from "@/lib/utils";
 import { FlashList } from "@shopify/flash-list";
 import { clsx } from "clsx";
 import { Link } from "expo-router";
-import { RotateCcw, Search } from "lucide-react-native";
+import { Banknote, RotateCcw, Search } from "lucide-react-native";
 import {} from "nativewind";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -79,6 +79,12 @@ export default function HomeScreen() {
 
                 <View className="flex-grow pt-2 pl-2">
                   <Text className="text-xl font-semibold">{item.title}</Text>
+                  <View className="flex flex-row items-center justify-start w-full gap-3">
+                    <View className="flex flex-row items-center justify-start gap-2">
+                      <Banknote size={16} />
+                      <Text>D:{formatToDZD(item.detailPrice || 0)}</Text>
+                    </View>
+                  </View>
                 </View>
                 <View
                   className={clsx(

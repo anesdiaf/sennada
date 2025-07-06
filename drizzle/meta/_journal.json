@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1751704440882,
+      "tag": "0000_slimy_sue_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1751728446041,
+      "tag": "0001_colorful_jazinda",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1751752806488,
+      "tag": "0002_soft_maria_hill",
+      "breakpoints": true
+    }
+  ]
+}
