@@ -40,6 +40,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <PackagePlus size={28} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="connect"
+        options={{
+          title: "Connecter",
+          tabBarIcon: ({ color }) => <PackagePlus size={28} color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
