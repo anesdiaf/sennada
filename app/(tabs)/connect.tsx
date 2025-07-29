@@ -17,6 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Toast from "react-native-toast-message";
 
 const protocol = "ws://";
 const port = ":9000";
@@ -30,6 +31,8 @@ function Connect({}: Props) {
   const wsRef = useRef<WebSocket | null>(null);
 
   const [modalVisible, setModalVisible] = useState(false);
+
+  const [saleModalVisible, setSaleModalVisible] = useState(false);
 
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
@@ -50,19 +53,19 @@ function Connect({}: Props) {
         saveLocalIp(url);
       }
       log("✅ Connected to " + url);
-      Alert.alert("Application connectée au succès");
+      Toast.show({ type: "success", text1: "Application connectée au succès" });
     };
 
     wsRef.current.onmessage = (e) => {
-      log("📥 Received: " + e.data);
+      Toast.show({ type: "success", text1: "📥 Received: " + e.data });
     };
 
     wsRef.current.onerror = (e) => {
-      log("❌ Error: " + e.message);
+      Toast.show({ type: "error", text1: "❌ Error: " + e.message });
     };
 
     wsRef.current.onclose = () => {
-      log("🔌 Disconnected");
+      Toast.show({ type: "info", text1: "🔌 Disconnected" });
     };
   };
 
@@ -74,12 +77,15 @@ function Connect({}: Props) {
 
     const msg = { type: "newSale" };
     wsRef.current.send(JSON.stringify(msg));
+
+    setSaleModalVisible(true);
+
     log("📤 Sent: " + JSON.stringify(msg));
   };
 
   const sendLock = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      Alert.alert("⚠️ WebSocket not connected");
+      Alert.alert("⚠️ L'application n'est pas connectée");
       return;
     }
 
@@ -93,6 +99,18 @@ function Connect({}: Props) {
     setUrl(data);
     setScanned(false);
     setModalVisible(false);
+  };
+
+  const closeSale = () => {
+    setSaleModalVisible(false);
+
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      Alert.alert("⚠️ L'application n'est pas connectée");
+      return;
+    }
+    const msg = { type: "cancelSale" };
+    wsRef.current.send(JSON.stringify(msg));
+    Toast.show({ type: "info", text1: "Vente annulée" });
   };
 
   useEffect(() => {
@@ -153,6 +171,30 @@ function Connect({}: Props) {
         </View>
       </Modal>
 
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={saleModalVisible}
+        onRequestClose={() => setSaleModalVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "rgba(0,0,0,0.8)",
+          }}
+        >
+          <View className="z-40 w-4/5 bg-white rounded-md h-4/5">
+            <TouchableOpacity
+              className="absolute z-50 p-4 bg-red-500 rounded-md w-fit right-4 top-4"
+              onPress={() => closeSale()}
+            >
+              <X size={16} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       <View className="gap-3">
         <Text className="font-medium">Code à barres</Text>
         <View className="flex flex-row border border-gray-200 rounded-md">
@@ -160,7 +202,7 @@ function Connect({}: Props) {
             value={url}
             onChangeText={setUrl}
             placeholder="ws://192.168.1.x:9000"
-            className="flex-grow py-3 px-2"
+            className="flex-grow px-2 py-3"
           />
           <TouchableOpacity
             className="items-center justify-center bg-teal-500 rounded-md w-14"
