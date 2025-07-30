@@ -4,13 +4,12 @@ import {
   CameraView,
   useCameraPermissions,
 } from "expo-camera";
-import { CameraIcon, X } from "lucide-react-native";
+import { CameraIcon, Lightbulb, LightbulbOff, X } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Button,
   Modal,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -31,11 +30,16 @@ function Connect({}: Props) {
   const wsRef = useRef<WebSocket | null>(null);
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [cameraTorch, setCameraTorch] = useState(false);
 
   const [saleModalVisible, setSaleModalVisible] = useState(false);
+  const [isSaleActive, setSaleActive] = useState(false);
+  const [saleNumber, setSaleNumber] = useState("");
 
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [barcodeScanned, setBarcodeScanned] = useState(false);
+  const [barcode, setBarcode] = useState(false);
 
   const log = (msg: string) => {
     setMessages((prev) => [...prev, msg]);
@@ -58,6 +62,12 @@ function Connect({}: Props) {
 
     wsRef.current.onmessage = (e) => {
       Toast.show({ type: "success", text1: "📥 Received: " + e.data });
+      console.log(typeof e.data);
+      const res = JSON.parse(e.data);
+      if (res.type === "saleCreated") {
+        setSaleNumber(res.data);
+        setSaleActive(true);
+      }
     };
 
     wsRef.current.onerror = (e) => {
@@ -77,10 +87,6 @@ function Connect({}: Props) {
 
     const msg = { type: "newSale" };
     wsRef.current.send(JSON.stringify(msg));
-
-    setSaleModalVisible(true);
-
-    log("📤 Sent: " + JSON.stringify(msg));
   };
 
   const sendLock = () => {
@@ -88,26 +94,46 @@ function Connect({}: Props) {
       Alert.alert("⚠️ L'application n'est pas connectée");
       return;
     }
-
     const msg = { type: "lockApp" };
     wsRef.current.send(JSON.stringify(msg));
-    log("📤 Sent: " + JSON.stringify(msg));
   };
 
-  const handleBarcodeScanned = ({ data }: BarcodeScanningResult) => {
+  const addProduct = (data: string) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      Alert.alert("⚠️ L'application n'est pas connectée");
+      return;
+    }
+
+    Alert.alert(data);
+    const msg = { type: "addProduct", data };
+    wsRef.current.send(JSON.stringify(msg));
+  };
+
+  const handleIPScanned = ({ data }: BarcodeScanningResult) => {
     setScanned(true);
     setUrl(data);
     setScanned(false);
     setModalVisible(false);
   };
 
-  const closeSale = () => {
-    setSaleModalVisible(false);
+  const handleBarcodeScanned = ({ data }: BarcodeScanningResult) => {
+    if (barcodeScanned && !saleModalVisible) return;
 
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      Alert.alert("⚠️ L'application n'est pas connectée");
-      return;
-    }
+    setBarcodeScanned(true);
+    setTimeout(() => {
+      addProduct(data);
+
+      setBarcodeScanned(false);
+    }, 2000);
+
+    setCameraTorch(false);
+
+    setSaleModalVisible(false);
+  };
+
+  const closeSale = () => {
+    setSaleActive(false);
+    setSaleNumber("");
     const msg = { type: "cancelSale" };
     wsRef.current.send(JSON.stringify(msg));
     Toast.show({ type: "info", text1: "Vente annulée" });
@@ -142,7 +168,7 @@ function Connect({}: Props) {
         >
           <CameraView
             ratio="1:1"
-            onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+            onBarcodeScanned={scanned ? undefined : handleIPScanned}
             barcodeScannerSettings={{
               barcodeTypes: [
                 "qr",
@@ -185,18 +211,56 @@ function Connect({}: Props) {
             backgroundColor: "rgba(0,0,0,0.8)",
           }}
         >
-          <View className="z-40 w-4/5 bg-white rounded-md h-4/5">
+          <View className="z-40 w-[90%] bg-white rounded-md h-[90%]">
             <TouchableOpacity
               className="absolute z-50 p-4 bg-red-500 rounded-md w-fit right-4 top-4"
-              onPress={() => closeSale()}
+              onPress={() => setSaleModalVisible(false)}
             >
               <X size={16} color="white" />
+            </TouchableOpacity>
+            <View className="py-7 px-4">
+              <Text className="text-xl font-semibold">Ajouter un produit</Text>
+            </View>
+
+            <CameraView
+              enableTorch={cameraTorch}
+              ratio="1:1"
+              onBarcodeScanned={
+                barcodeScanned ? undefined : handleBarcodeScanned
+              }
+              barcodeScannerSettings={{
+                barcodeTypes: [
+                  "qr",
+                  "pdf417",
+                  "aztec",
+                  "ean13",
+                  "ean8",
+                  "upc_e",
+                  "code128",
+                  "code39",
+                  "codabar",
+                ],
+              }}
+              autofocus="on"
+              facing="back"
+            >
+              <View className="w-96 h-96"></View>
+            </CameraView>
+            <TouchableOpacity
+              className="p-6 rounded-md bg-teal-500 self-center m-6"
+              onPress={() => setCameraTorch((t) => !t)}
+            >
+              {cameraTorch ? (
+                <LightbulbOff size={20} color="white" />
+              ) : (
+                <Lightbulb size={20} color="white" />
+              )}
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
       <View className="gap-3">
-        <Text className="font-medium">Code à barres</Text>
         <View className="flex flex-row border border-gray-200 rounded-md">
           <TextInput
             value={url}
@@ -217,13 +281,31 @@ function Connect({}: Props) {
         <Button title="Nouvelle vente" onPress={sendNewSale} />
         <Button title="Verrouillage" onPress={sendLock} />
       </View>
-      <ScrollView style={styles.log}>
-        {messages.map((msg, index) => (
-          <Text key={index} style={{ fontSize: 12 }}>
-            {msg}
-          </Text>
-        ))}
-      </ScrollView>
+      <View style={styles.log}>
+        {isSaleActive && (
+          <View className="p-2">
+            <View className="flex flex-row w-full justify-between items-center">
+              <Text className="text-xl font-semibold">
+                Nouvelle vente
+                <Text className="text-base text-gray-600"> #{saleNumber}</Text>
+              </Text>
+              <TouchableOpacity
+                onPress={() => closeSale()}
+                className="bg-red-500 p-2 text-center rounded-md"
+              >
+                <X size={20} color="white" />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => setSaleModalVisible(true)}
+              className="bg-teal-500 p-2 text-center mt-4"
+            >
+              <Text className="text-center text-white">+</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
